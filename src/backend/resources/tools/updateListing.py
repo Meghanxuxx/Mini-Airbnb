@@ -4,116 +4,116 @@ R5-2: Price can be only increased but cannot be decreased :)
 R5-3: last_modified_date should be updated when the update operation is successful.
 R5-4: When updating an attribute, one has to make sure that it follows the same requirements as above.
 '''
-
-from datetime import datetime
-#import models
+from datetime import date
+import json
+import uuid
+import re
 import sqlite3
 
-# listing (id, title, description, price, last_modified_date, owner_id)
-# very similar to the update user profile
+
+def update_listing_format_checker_1(proerpty_1):
+
+    if ("prop_id" in proerpty_1 or "posted_date" in proerpty_1):
+        raise InvalidUpdateListing(
+            "prop_id or posted date should not be in side the ")
 
 
-def check_title_format(title):
-    '''
-    para: corresponding type, benefits easier readable test cases
-    return: bool
-    '''
-    return False
-
-
-def check_description_format(description):
-    return False
-
-
-def check_price_range(price):
-    return False
-
-
-def check_last_modified_date(last_modified):
-    return False
-
-
-def check_owner_bg(owner_id):
-    '''
-    here check both existence and product's uniqueness
-    '''
-    return False
-
-
-def format_checker(listing):
-    '''
-    call all check functions pass in list["title"]
-    para: json
-    return: bool
-    '''
-    return (check_title_format(listing["title"]) and check_description_format(listing["description"])
-            and check_price_range(listing["price"]) and check_last_modified_date(listing["last_modified_date"])
-            and check_owner_bg(listing["user_id"]))
-
-
-def update_listing(user_id, prop_id, title, description, price, posted_date):
-    '''
-    Update existing listing
-    '''
-
-    print("Hello")
-
-    # check id
-    if id is None:
-        return False
-
-    # R5-2: Price can be only increased but cannot be decreased
-    # if (models.PropertyModel.price > price):
-        # return False
-
-    #old_last_modified_date = models.PropertyModel.posted_date
-    date = datetime.now()
-    print(str(date))
-    if not check_last_modified_date(date):
-        return False
-
-    # R5-4: When updating an attribute, one has to make sure that it follows the same requirements as above.
-    title_check = check_title_format(title)
-    description_check = check_description_format(description)
-    price_check = check_price_range(price)
-
-    check_update = True
-
-    import os
+def updating_data(proerpty_1) -> dict:
     path = os.path.dirname(os.path.abspath(__file__))
     connection = sqlite3.connect(path + "/../../data.db")
     cursor = connection.cursor()
+
     cursor.execute(
-        "SELECT user_id, posted_date FROM Properties WHERE prop_id = (?)", (prop_id))
-    rows = cursor.fetchone()
-    print(rows)
-    real_user_id = rows[0]
-    real_date = rows[1]
+        "SELECT price FROM Properties WHERE user_id = (?)", (proerpty_1["user_id"],))
 
+    (price) = cursor.fetchone()
+
+    if (price[0] < proerpty_1["price"]):
+        raise InvalidUpdateListing("Price can go up")
+
+    # check the property_1
+    update_listing_format_checker_2(proerpty_1)
     connection.close()
+
+    proerpty_1["posted_date"] = date.today()
+
+    return proerpty_1
+
+
+def update_listing_format_checker_2(proerpty_1):
+
+    if (not re.fullmatch(AccNameReg, proerpty_1["title"])):
+        raise InvalidUpdateListing("No title name")
+
+    if (len(proerpty_1["title"]) > 80):
+        raise InvalidUpdateListing("title name should less than 80")
+
+    if (not (len(proerpty_1["description"]) > 20 
+        and len(proerpty_1["description"]) < 2000)):
+        raise InvalidUpdateListing(
+            "description should more than 20, and less than 2000")
+
+    if (not (len(proerpty_1["description"]) > len(proerpty_1["title"]))):
+        raise InvalidUpdateListing("description have to be longer than title")
+
+    if (not (proerpty_1["price"] > 10 and proerpty_1["price"] < 10000)):
+        raise InvalidUpdateListing("price must between 10 and 10000")
+
+    if ("email" not in proerpty_1 or len(proerpty_1["email"]) == 0):
+        raise InvalidUpdateListing("email can not be empty")
+
+
+if __name__ == "__main__":
+    from regexRepo import emailReg, AccNameReg, passwordReg
+    from exceptions import InvalidUpdateListing
+    import os
+    import sys
+    path = os.path.abspath(os.getcwd())
+    sys.path.append(path)
+    from models.property import PropertyModel
+    from db import db
+
+    '''
+    attention, this function requires some pre-stored data
+    in the database, you can run command [in the directory of backend]
     
-    if real_date is None:
-        print("Ok")
+    py ./resources/tools/register.py 
+    '''
 
-    if real_user_id != user_id:
-        return False
+    # we don't have last_modify date, but I think you can use posted_date
+    proerpty_1 = {
+        "title": "A lighted mansion",
+        "user_id": "20a7066e8e844759a99a20ecbd6935fe",
+        "description": "This is a mansion sits beside a beach with 16hr+ " +
+        "sunshine, beside daily facillities also" +
+        "provide with mini swimming pool",
+        "price": 5000,
+        "email": "JimmyMcgill@SGA.com",
+        "address": "9800 Montgomery Blvd NE, Albuquerque, New Mexico",
+        "image": "building.png",
+        "capacity": 4
+    }
 
-    # R5-1: One can update all attributes of the listing, except owner_id and last_modified_date.
-    # if title_check and description_check and price_check:
-        #models.PropertyModel.prop_id = prop_id
-        #models.PropertyModel.title = title
-        #models.PropertyModel.description = description
-        #models.PropertyModel.price = price
-        # return check_update
+    proerpty_2 = {
+        "title": "Garbage room",
+        "user_id": "20a7066e8e844759a99a20ecbd6935fe",
+        "description": "you wnat to live heree??",
+        "price": 59,
+        "email": "Garbage@SGA.com",
+        "address": "9800 Montgomery Blvd NE, Albuquerque, Quebec",
+        "image": "building.png",
+        "capacity": 5
 
-    # R5-3: last_modified_date should be updated when the update operation is successful.
-    # last_modified_date = date
-    last_modified_date = date
-    # if check_update and (last_modified_date is not old_last_modified_date):
-    #print("last modified date successfully update")
-    # return True
+    }
+
+    update_listing_format_checker_1(proerpty_1)
+    updating_data(proerpty_1)
+
+    update_listing_format_checker_1(proerpty_2)
+    updating_data(proerpty_2)
 
 
-if __name__ == '__main__':
-    update_listing("20a7066e8e844759a99a20ecbd6935fe",
-                   "59a99a20ecbd6935fe", "staffer", "Queens", 1000, datetime.now())
+else:
+    from .regexRepo import emailReg, AccNameReg, passwordReg
+    from .exceptions import InvalidUpdateListing
+    import os
